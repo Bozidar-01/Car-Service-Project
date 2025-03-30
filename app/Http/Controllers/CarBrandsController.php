@@ -22,7 +22,7 @@ class CarBrandsController extends Controller
         // Generate file URLs for each car brand and add a logo_url field to the collection
         $carBrands->map(function ($carBrand) {
             $carBrand->logo_url = $carBrand->logo ? Storage::url($carBrand->logo) : null;
-            dd($carBrand->logo_url);
+//            dd($carBrand->logo_url);
             return $carBrand;
         });
 
