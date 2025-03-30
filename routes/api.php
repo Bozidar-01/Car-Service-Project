@@ -18,7 +18,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/getUserCars', [CarController::class, 'getUserCars']);
         Route::get('/models/{id}', [CarController::class, 'getCarModel']);
         Route::post('/addUserCar', [CarController::class, 'addNewUserCar']);
-
+        Route::post('/updateUserCar', [CarController::class, 'addNewCarDetails']);
+        Route::get('/defaultServices', [CarController::class, 'getDefaultServices']);
+        Route::get('/activeServices', [CarController::class, 'getActiveServices']);
+        Route::post('/completeService', [CarController::class, 'markServiceCompleted']);
 
     });
 

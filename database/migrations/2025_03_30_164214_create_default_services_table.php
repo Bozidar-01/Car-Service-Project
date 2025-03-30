@@ -11,14 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('services', function (Blueprint $table) {
+        Schema::create('default_services', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_car_id')->constrained('user_cars');
-            $table->string('type');
-            $table->integer('price')->nullable();
-            $table->date('last_serviced');
-            $table->date('next_service')->nullable();
-            $table->string('product_used')->nullable();
+            $table->string('name');
+            $table->integer('service_interval')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('services');
+        Schema::dropIfExists('default_services');
     }
 };

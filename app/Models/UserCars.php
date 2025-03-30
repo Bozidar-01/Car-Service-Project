@@ -18,4 +18,9 @@ class UserCars extends Model
     {
         return $this->belongsTo(CarModel::class, 'car_model_id');
     }
+
+    public function services()
+    {
+        return $this->hasMany(Service::class, 'user_car_id');
+    }
 }
