@@ -8,6 +8,7 @@ use App\Models\CarModel;
 use App\Models\CarModels;
 use App\Models\Cars;
 use App\Models\DefaultService;
+use App\Models\Mods;
 use App\Models\Service;
 use App\Models\UserCars;
 use Faker\Provider\Base;
@@ -145,9 +146,23 @@ class CarController extends BaseController
         return $this->responseSuccess($defaultServices,'default-services','default services fetched successfully',200);
     }
 
-    public function getActiveServices(){
+    public function getAllServices($carID){
         $userID = auth()->user()->id;
-        $services = Service::with('defaultService')->where('user_id',$userID)->where('status','active')->get();
+        $services = Service::with('defaultService')->where('user_id',$userID)->where('user_car_id',$carID)->get();
+
+        return $this->responseSuccess($services,'services','services fetched successfully',200);
+    }
+
+    public function getActiveServices($carID){
+        $userID = auth()->user()->id;
+        $services = Service::with('defaultService')->where('user_id',$userID)->where('user_car_id',$carID)->where('status','active')->get();
+
+        return $this->responseSuccess($services,'services','services fetched successfully',200);
+    }
+
+    public function getCompletedServices($carID){
+        $userID = auth()->user()->id;
+        $services = Service::with('defaultService')->where('user_car_id',$carID)->where('user_id',$userID)->where('status','completed')->get();
 
         return $this->responseSuccess($services,'services','services fetched successfully',200);
     }
@@ -177,4 +192,97 @@ class CarController extends BaseController
 
         return $this->responseSuccess($service, 'service-completed', 'Service Completed Successfully', 200);
     }
+
+    public function addCustomService(Request $request){
+        $request->validate([
+            'custom_service'=>'required',
+            'user_car_id'=>'required'
+        ]);
+
+        $car = UserCars::where('id',$request->user_car_id)->firstorfail();
+
+        $service = new Service();
+        $user_id = auth()->user()->id;
+        $service->user_id = $user_id;
+        $service->custom_service = $request->custom_service;
+        $service->next_service = $car->purchase_date;
+        $service->user_car_id = $request->user_car_id;
+        $service->save();
+
+        return $this->responseSuccess($service, 'service-added', 'Service Added Successfully', 200);
+
+    }
+
+    public function updateService(Request $request){
+        $request->validate([
+            'custom_service'=>'required',
+            'id'=>'required',
+            'user_car_id'=>'required'
+        ]);
+
+        $service = Service::where('id',$request->id)->first();
+        $service->custom_service = $request->custom_service;
+        $service->user_car_id = $request->user_car_id;
+        $service->save();
+
+        return $this->responseSuccess($service, 'service-updated', 'Service Updated Successfully', 200);
+
+    }
+
+    public function checkCarsInNeedOfService()
+    {
+        $userId = auth()->user()->id;
+
+        // Get user cars with active services
+        $userCars = UserCars::where('user_id', $userId)
+            ->whereHas('services', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->get();
+
+        // Extract car IDs
+        $carIds = $userCars->pluck('id')->toArray();
+        $count = count($carIds); // Or $userCars->count()
+
+        return $this->responseSuccess(
+            [
+                'count' => $count,
+                'car_ids' => $carIds
+            ],
+            'cars-in-need',
+            'Cars needing service fetched successfully',
+            200
+        );
+    }
+
+
+    public function addMod(Request $request){
+        $request->validate([
+            'user_car_id'=>'required',
+            'mod_type'=>'required',
+            'price'=>'required',
+        ]);
+
+        $userID = auth()->user()->id;
+
+        $mod = new Mods();
+        $mod->user_id = $userID;
+        $mod->user_car_id = $request->user_car_id;
+        $mod->mod_type = $request->mod_type;
+        $mod->price = $request->price;
+
+        $mod->save();
+
+        return $this->responseSuccess($mod, 'mods-added', 'Mod Added Successfully', 200);
+    }
+
+
+    public function getAllMods($carID){
+        $userID = auth()->user()->id;
+        $mods = Mods::where('user_id',$userID)->where('user_car_id',$carID)->get();
+
+        return $this->responseSuccess($mods,'mods','mods fetched successfully',200);
+    }
+
+
 }

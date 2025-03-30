@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_car_id')->constrained('user_cars');
-            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('user_car_id')->constrained('user_cars')->onDelete('cascade')->nullable();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('default_service_id')->constrained('default_services')->onDelete('cascade');
             $table->integer('price')->nullable();
             $table->enum('status', ['active', 'inactive', 'completed'])->default('active');

@@ -17,6 +17,10 @@ class Service extends Model
         'product_used',
     ];
 
+    protected $casts = [
+        'custom_service' => 'array',
+    ];
+
     public function userCar()
     {
         return $this->belongsTo(UserCars::class, 'user_car_id');

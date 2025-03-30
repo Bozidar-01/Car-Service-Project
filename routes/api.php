@@ -20,11 +20,18 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::post('/addUserCar', [CarController::class, 'addNewUserCar']);
         Route::post('/updateUserCar', [CarController::class, 'addNewCarDetails']);
         Route::get('/defaultServices', [CarController::class, 'getDefaultServices']);
-        Route::get('/activeServices', [CarController::class, 'getActiveServices']);
+        Route::get('/activeServices/{id}', [CarController::class, 'getActiveServices']);
         Route::post('/completeService', [CarController::class, 'markServiceCompleted']);
+        Route::get('/completedServices/{id}', [CarController::class, 'getCompletedServices']);
+        Route::post('/addCustomService', [CarController::class, 'addCustomService']);
+        Route::get('/getAllServices/{id}', [CarController::class, 'getAllServices']);
+        Route::post('/updateService', [CarController::class, 'updateService']);
+        Route::get('/countServiceCars', [CarController::class, 'checkCarsInNeedOfService']);
+        Route::post('/addMod', [CarController::class, 'addMod']);
+        Route::get('/getAllMods/{id}', [CarController::class, 'getAllMods']);
+
 
     });
-
 });
 
 
