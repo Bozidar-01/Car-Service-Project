@@ -18,6 +18,13 @@ class CarModel extends Model
     {
         return [
             'engines' => 'array',
+            'colors' => 'array',
+
         ];
+    }
+
+    public function Cars()
+    {
+        return $this->belongsTo(Cars::class, 'car_id');
     }
 }

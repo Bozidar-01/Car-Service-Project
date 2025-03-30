@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users');
             $table->foreignId('car_model_id')->constrained('car_model');
-            $table->string('engine');
+            $table->json('engine');
             $table->string('color');
             $table->date('manufacture_date');
             $table->timestamps();

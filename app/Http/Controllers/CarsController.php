@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\FileUpload;
 use App\Http\Requests\CarsRequest;
 use App\Models\CarBrand;
 use App\Models\Cars;
@@ -41,24 +42,29 @@ class CarsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CarsRequest $request,$brandID)
+    public function store(CarsRequest $request, $brandID)
     {
         $request->validate([
             'model' => 'required|string|max:255',
             'year_of_production' => 'required|string|max:255',
-            'image' => 'required|image|max:2048', // Example: max 2MB
+            'image' => 'required|file|image|max:2048', // Ensure it’s a file
         ]);
+
         $car = new Cars();
         $car->car_brand_id = $brandID;
         $car->model = $request->model;
         $car->year_of_production = $request->year_of_production;
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('images', 'public');
-            $car->image = $path;
+
+        if($request->file('image')) {
+            // Use the FileUpload helper to store the file
+            $url = FileUpload::storeFile($request->file('image'));
+            $filename = basename($url); // Extracts the filename from the file URL
+            $car->image = $filename; // Save only the filename in the database
         }
-//        dd($brandID);
+//        dd($car->toArray());
         $car->save();
-        return redirect()->route('cars.index', ['brand' => $brandID])->with('success', 'Car brand added!');
+
+        return redirect()->route('cars.index', ['brand' => $brandID])->with('success', 'Car added successfully!');
     }
 
     /**

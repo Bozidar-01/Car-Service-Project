@@ -16,4 +16,15 @@ class Cars extends Model
         'car_brand_id',
     ];
 
+
+    protected $casts = [
+        'image' => 'array',
+    ];
+
+    public function CarBrand()
+    {
+        return $this->belongsTo(CarBrand::class);
+    }
+
+
 }
