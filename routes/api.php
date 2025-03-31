@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\userController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\API\CarBrandsController;
 use Illuminate\Support\Facades\Route;
@@ -29,9 +30,19 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/countServiceCars', [CarController::class, 'checkCarsInNeedOfService']);
         Route::post('/addMod', [CarController::class, 'addMod']);
         Route::get('/getAllMods/{id}', [CarController::class, 'getAllMods']);
+        Route::post('/updateCarKm', [CarController::class, 'updateCarKm']);
+
+    });
+
+    Route::prefix('user')->group(function () {
+        Route::get('/', [UserController::class, 'getUserData']);
+        Route::post('/update', [UserController::class, 'updateUser']);
+        Route::post('/updatePic', [UserController::class, 'updatePic']);
 
 
     });
+
+
 });
 
 

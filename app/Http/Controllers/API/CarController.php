@@ -284,5 +284,23 @@ class CarController extends BaseController
         return $this->responseSuccess($mods,'mods','mods fetched successfully',200);
     }
 
+    public function updateCarKm(Request $request)
+    {
+        $request->validate([
+            'car_km' => 'required',
+            'user_car_id'=>'required'
+        ]);
+
+        $userId = auth()->user()->id;
+
+        $car = UserCars::where('user_id', $userId)->where('id', $request->user_car_id)->firstorfail();
+
+        $car->car_km = $request->car_km;
+
+        $car->save();
+
+        return $this->responseSuccess($car, 'car-km-updated', 'Car KM Updated Successfully', 200);
+    }
+
 
 }
