@@ -8,11 +8,11 @@ use App\Http\Controllers\CarBrandsController;
 use App\Http\Controllers\CarModelsController;
 
 // Public Routes
-//Route::get('/', function () {
-//    return view('welcome');
-//})->name('welcome');
+Route::get('/', function () {
+    return view('welcome');
+})->name('welcome');
 
-Route::get('/', [CarBrandsController::class, 'sendNotif']);
+//Route::get('/', [CarBrandsController::class, 'sendNotif']);
 
 // Car Brands and Cars Resources (open to general users if needed)
 

@@ -26,4 +26,9 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function userCars()
+    {
+        return $this->hasMany(UserCars::class, 'user_id'); // Adjust 'UserCar' and 'user_id' as needed
+    }
 }

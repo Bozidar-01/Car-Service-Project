@@ -17,7 +17,7 @@ class NotificationsController extends BaseController
             'contents' => ['en' => $alert['content']],
             'target_channel' => 'push',
             'include_aliases' => [
-                'external_id' => 'carServices-' . $user
+                'external_id' => 'carServices-' . $user->id
             ]
         ];
 
