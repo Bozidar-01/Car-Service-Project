@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->integer('service_interval')->nullable();
+            $table->integer('date_interval')->nullable();
             $table->timestamps();
         });
     }

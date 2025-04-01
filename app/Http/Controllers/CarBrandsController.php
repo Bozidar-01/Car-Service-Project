@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\FileUpload;
 use App\Helpers\OneSignal;
 use App\Http\Requests\CarBrandRequest;
 use App\Models\CarBrand;
@@ -62,9 +63,11 @@ class CarBrandsController extends Controller
         $carBrand->name = $request->name;
         $carBrand->country = $request->country;
 
-        if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('logos', 'public');
-            $carBrand->logo = $path;
+        if($request->file('logo')) {
+            // Use the FileUpload helper to store the file
+            $url = FileUpload::storeFile($request->file('logo'));
+            $filename = basename($url); // Extracts the filename from the file URL
+            $carBrand->logo = $filename; // Save only the filename in the database
         }
 
         $carBrand->save();
@@ -105,11 +108,15 @@ class CarBrandsController extends Controller
             unset($data['country']);
         }
 
-        // Handle logo upload if it exists
-        if ($request->hasFile('logo')) {
-            $filePath = $request->file('logo')->store('logos', 'public');
-            $data['logo'] = $filePath;
+
+        if($request->file('logo')) {
+            // Use the FileUpload helper to store the file
+            $url = FileUpload::storeFile($request->file('logo'));
+            $filename = basename($url); // Extracts the filename from the file URL
+            $data['logo'] = $filename; // Save only the filename in the database
         }
+
+
 
         // Update only the modified fields
         $carBrand->update($data);

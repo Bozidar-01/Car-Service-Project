@@ -21,6 +21,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'completed'])->default('active');
             $table->date('last_serviced')->nullable();
             $table->date('next_service')->nullable();
+            $table->integer('next_service_km')->nullable();
             $table->string('product_used')->nullable();
             $table->timestamps();
         });

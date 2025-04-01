@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Helpers\FileUpload;
 use App\Http\Controllers\BaseController;
 use App\Http\Resources\CarBrandResource;
 use App\Models\CarBrand;
@@ -23,6 +24,14 @@ class CarBrandsController extends BaseController
         $brands = CarBrand::whereHas('cars', function ($query) use ($userCarIds) {
             $query->whereNotIn('id', $userCarIds);
         })->get();
+
+
+        foreach ($brands as $brand) {
+            if ($brand->logo) {
+                $mediaPath = $brand->logo;
+                $brand->logo = FileUpload::getFullUrl("uploads/{$mediaPath}");
+            }
+        }
 
         return $this->responseSuccess($brands, 'car-brands', 'Car Brands shown successfully', 200);
     }

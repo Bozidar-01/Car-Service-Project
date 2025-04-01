@@ -66,11 +66,6 @@ class userController extends BaseController
 
        $user = User::where('id',$userID)->firstorfail();
 
-       if($user->profile_pic){
-           $mediaPath = $user->profile_pic;
-           $user->profile_pic = FileUpload::getFullUrl("uploads/{$mediaPath}");
-       }
-
        return $this->responseSuccess($user,'user-data','user data fetched successfully!',200);
 
    }

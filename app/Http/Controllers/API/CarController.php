@@ -43,15 +43,17 @@ class CarController extends BaseController
     }
 
 
-   public function getCarModel($id){
-        $model = CarModel::where("car_id",$id)->get();
+    public function getCarModel($id)
+    {
+        $model = CarModel::where("car_id", $id)->get();
 
 
-       return $this->responseSuccess($model,'car-models','car models fetched successfully',200);
+        return $this->responseSuccess($model, 'car-models', 'car models fetched successfully', 200);
 
-   }
+    }
 
-   public function addNewUserCar(Request $request){
+    public function addNewUserCar(Request $request)
+    {
         $request->validate([
             'car_model_id' => 'required',
             'engine' => 'required',
@@ -72,9 +74,9 @@ class CarController extends BaseController
         $userCar->save();
 
 
-        return $this->responseSuccess($userCar,'car-added','Car Added Successfully', 200);
+        return $this->responseSuccess($userCar, 'car-added', 'Car Added Successfully', 200);
 
-   }
+    }
 
     public function getUserCars()
     {
@@ -118,53 +120,50 @@ class CarController extends BaseController
 
         // Add default services to the services table
         foreach ($defaultServices as $defaultService) {
-            // Check if the service already exists for this car to avoid duplicates
-            $existingService = Service::where('user_car_id', $userCar->id)
-                ->where('default_service_id', $defaultService->id)
-                ->exists();
-
-            if (!$existingService) {
-                Service::create([
-                    'user_car_id' => $userCar->id,
-                    'user_id' => $userID,
-                    'default_service_id' => $defaultService->id,
-                    'price' => null, // Or set from $defaultService if available
-                    'status' => 'active',
-                    'last_serviced' => null,
-                    'next_service' => $request->purchase_date,
-                    'product_used' => null,
-                ]);
-            }
+            Service::create([
+                'user_car_id' => $userCar->id,
+                'user_id' => $userID,
+                'default_service_id' => $defaultService->id,
+                'price' => null,
+                'status' => 'active',
+                'last_serviced' => null,
+                'next_service' => $request->purchase_date,
+                'product_used' => null,
+            ]);
         }
 
         return $this->responseSuccess($userCar, 'car-updated', 'Car Updated Successfully with Default Services', 200);
     }
 
-    public function getDefaultServices(){
+    public function getDefaultServices()
+    {
         $defaultServices = DefaultService::all();
 
-        return $this->responseSuccess($defaultServices,'default-services','default services fetched successfully',200);
+        return $this->responseSuccess($defaultServices, 'default-services', 'default services fetched successfully', 200);
     }
 
-    public function getAllServices($carID){
+    public function getAllServices($carID)
+    {
         $userID = auth()->user()->id;
-        $services = Service::with('defaultService')->where('user_id',$userID)->where('user_car_id',$carID)->get();
+        $services = Service::with('defaultService')->where('user_id', $userID)->where('user_car_id', $carID)->get();
 
-        return $this->responseSuccess($services,'services','services fetched successfully',200);
+        return $this->responseSuccess($services, 'services', 'services fetched successfully', 200);
     }
 
-    public function getActiveServices($carID){
+    public function getActiveServices($carID)
+    {
         $userID = auth()->user()->id;
-        $services = Service::with('defaultService')->where('user_id',$userID)->where('user_car_id',$carID)->where('status','active')->get();
+        $services = Service::with('defaultService')->where('user_id', $userID)->where('user_car_id', $carID)->where('status', 'active')->get();
 
-        return $this->responseSuccess($services,'services','services fetched successfully',200);
+        return $this->responseSuccess($services, 'services', 'services fetched successfully', 200);
     }
 
-    public function getCompletedServices($carID){
+    public function getCompletedServices($carID)
+    {
         $userID = auth()->user()->id;
-        $services = Service::with('defaultService')->where('user_car_id',$carID)->where('user_id',$userID)->where('status','completed')->get();
+        $services = Service::with('defaultService')->where('user_car_id', $carID)->where('user_id', $userID)->where('status', 'completed')->get();
 
-        return $this->responseSuccess($services,'services','services fetched successfully',200);
+        return $this->responseSuccess($services, 'services', 'services fetched successfully', 200);
     }
 
 
@@ -183,23 +182,61 @@ class CarController extends BaseController
             ->where('id', $request->service_id)
             ->firstOrFail();
 
+        $car = UserCars::where('id', $service->user_car_id)->firstorfail();
+
+
+        $defaultService = DefaultService::where('id', $service->default_service_id)->firstorfail();
+
         // Update service details
         $service->status = 'completed';
         $service->price = $request->price;
         $service->product_used = $request->product_used;
         $service->last_serviced = Carbon::today(); // Set to today's date
+        if (!$service->custom_service) {
+            $service->next_service = $service->last_serviced->copy()->addMonths($defaultService->date_interval);
+            $service->next_service_km = $car->car_km + $defaultService->service_interval;
+        } else {
+            $customService = is_string($service->custom_service)
+                ? json_decode($service->custom_service, true)
+                : (array)$service->custom_service;
+
+            $service->next_service = $service->last_serviced->copy()->addMonths($customService['date_interval']);
+            $service->next_service_km = $car->car_km + $customService['service_interval'];
+        }
         $service->save();
 
         return $this->responseSuccess($service, 'service-completed', 'Service Completed Successfully', 200);
     }
 
-    public function addCustomService(Request $request){
+    public function toggleService(Request $request)
+    {
         $request->validate([
-            'custom_service'=>'required',
-            'user_car_id'=>'required'
+            'service_id' => 'required|exists:services,id',
+            'status' => 'required|string',
         ]);
 
-        $car = UserCars::where('id',$request->user_car_id)->firstorfail();
+        $userId = auth()->user()->id;
+
+        // Find the specific service for the authenticated user
+        $service = Service::where('user_id', $userId)
+            ->where('id', $request->service_id)
+            ->firstOrFail();
+
+        // Update service details
+        $service->status = $request->input('status');
+        $service->save();
+
+        return $this->responseSuccess($service, 'status-changed', 'Service Status Changed Successfully', 200);
+    }
+
+    public function addCustomService(Request $request)
+    {
+        $request->validate([
+            'custom_service' => 'required',
+            'user_car_id' => 'required'
+        ]);
+
+        $car = UserCars::where('id', $request->user_car_id)->firstorfail();
 
         $service = new Service();
         $user_id = auth()->user()->id;
@@ -213,14 +250,15 @@ class CarController extends BaseController
 
     }
 
-    public function updateService(Request $request){
+    public function updateService(Request $request)
+    {
         $request->validate([
-            'custom_service'=>'required',
-            'id'=>'required',
-            'user_car_id'=>'required'
+            'custom_service' => 'required',
+            'id' => 'required',
+            'user_car_id' => 'required'
         ]);
 
-        $service = Service::where('id',$request->id)->first();
+        $service = Service::where('id', $request->id)->first();
         $service->custom_service = $request->custom_service;
         $service->user_car_id = $request->user_car_id;
         $service->save();
@@ -256,11 +294,12 @@ class CarController extends BaseController
     }
 
 
-    public function addMod(Request $request){
+    public function addMod(Request $request)
+    {
         $request->validate([
-            'user_car_id'=>'required',
-            'mod_type'=>'required',
-            'price'=>'required',
+            'user_car_id' => 'required',
+            'mod_type' => 'required',
+            'price' => 'required',
         ]);
 
         $userID = auth()->user()->id;
@@ -277,18 +316,19 @@ class CarController extends BaseController
     }
 
 
-    public function getAllMods($carID){
+    public function getAllMods($carID)
+    {
         $userID = auth()->user()->id;
-        $mods = Mods::where('user_id',$userID)->where('user_car_id',$carID)->get();
+        $mods = Mods::where('user_id', $userID)->where('user_car_id', $carID)->get();
 
-        return $this->responseSuccess($mods,'mods','mods fetched successfully',200);
+        return $this->responseSuccess($mods, 'mods', 'mods fetched successfully', 200);
     }
 
     public function updateCarKm(Request $request)
     {
         $request->validate([
             'car_km' => 'required',
-            'user_car_id'=>'required'
+            'user_car_id' => 'required'
         ]);
 
         $userId = auth()->user()->id;
@@ -301,6 +341,21 @@ class CarController extends BaseController
 
         return $this->responseSuccess($car, 'car-km-updated', 'Car KM Updated Successfully', 200);
     }
+
+
+    public function deleteUserCar($id)
+    {
+
+        $userId = auth()->user()->id;
+
+        $car = UserCars::where('user_id', $userId)->where('id', $id)->firstorfail();
+
+
+        $car->delete();
+
+        return $this->responseSuccess($car, 'car-removed', 'Car Removed Successfully', 200);
+    }
+
 
 
 }

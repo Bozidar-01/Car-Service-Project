@@ -100,10 +100,13 @@ class CarsController extends Controller
                 unset($data['year_of_production']);
             }
 
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('images', 'public');
-                $data['image'] = $path;
+            if($request->file('image')) {
+                // Use the FileUpload helper to store the file
+                $url = FileUpload::storeFile($request->file('image'));
+                $filename = basename($url); // Extracts the filename from the file URL
+                $data['image'] = $filename; // Save only the filename in the database
             }
+
             $cars->update($data); // Attempt to update the car
             return redirect()->route('cars.index', ['brand' => $brand])
                 ->with('success', 'Car has been successfully updated!');
