@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\OneSignal;
 use App\Http\Requests\CarBrandRequest;
 use App\Models\CarBrand;
 use Illuminate\Http\Request;
@@ -12,6 +13,14 @@ class CarBrandsController extends Controller
     /**
      * Display a listing of the resource.
      */
+
+    public function sendNotif(){
+        $alert = [
+            'title' => 'Test Title',
+            'content' => 'Test Content',
+        ];
+        OneSignal::sendNotificationTo(1,'Service Tracker','Its time to change your oil');
+    }
 
     public function index()
     {

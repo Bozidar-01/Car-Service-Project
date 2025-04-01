@@ -9,3 +9,4 @@ class Notifications extends Model
 {
     use HasFactory;
 }
+
