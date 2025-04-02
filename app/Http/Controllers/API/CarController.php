@@ -128,6 +128,7 @@ class CarController extends BaseController
                 'status' => 'active',
                 'last_serviced' => null,
                 'next_service' => $request->purchase_date,
+                'next_service_km' =>  $userCar->car_km,
                 'product_used' => null,
             ]);
         }

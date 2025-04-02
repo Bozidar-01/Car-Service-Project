@@ -19,3 +19,7 @@ Schedule::command('notification:monday')
     ->cron('0 11 * * 1') // Every Monday at 11:00 AM
     ->timezone('CET');   // Central European Time
 
+// Schedule the service notification command to run daily at 9:00 AM CET
+Schedule::command('notification:service')
+    ->cron('0 9 * * *') // Every day at 9:00 AM
+    ->timezone('CET');   // Central European Time
