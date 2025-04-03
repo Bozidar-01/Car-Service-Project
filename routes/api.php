@@ -34,6 +34,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::post('/updateCarKm', [CarController::class, 'updateCarKm']);
         Route::get('/deleteUserCar/{id}', [CarController::class, 'deleteUserCar']);
         Route::get('/makeCarMain/{id}', [CarController::class, 'makeCarMain']);
+        Route::post('/addCompletedService', [CarController::class, 'addCompletedService']);
+
 
     });
 

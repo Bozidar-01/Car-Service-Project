@@ -13,7 +13,8 @@ use App\Models\Service;
 use App\Models\UserCars;
 use Faker\Provider\Base;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
+use function PHPUnit\Framework\greaterThanOrEqual;
 
 class CarController extends BaseController
 {
@@ -166,7 +167,17 @@ class CarController extends BaseController
     public function getActiveServices($carID)
     {
         $userID = auth()->user()->id;
-        $services = Service::with('defaultService')->where('user_id', $userID)->where('user_car_id', $carID)->where('status', 'active')->get();
+        $currentDate = Carbon::now();
+
+        $car = UserCars::where('id', $carID)->firstOrFail();
+
+        $services = Service::with('defaultService')
+            ->where('user_id', $userID)
+            ->where('user_car_id', $carID)
+            ->where('status', 'active')
+            ->where('next_service', '<=', $currentDate)
+            ->where('next_service_km', '<=', $car->car_km)
+            ->get();
 
         return $this->responseSuccess($services, 'services', 'services fetched successfully', 200);
     }
@@ -174,7 +185,7 @@ class CarController extends BaseController
     public function getCompletedServices($carID)
     {
         $userID = auth()->user()->id;
-        $services = Service::with('defaultService')->where('user_car_id', $carID)->where('user_id', $userID)->where('status', 'completed')->get();
+        $services = Service::with('defaultService')->where('user_car_id', $carID)->where('user_id', $userID)->whereIn('status', ['completed', 'old'])->get();
 
         return $this->responseSuccess($services, 'services', 'services fetched successfully', 200);
     }
@@ -255,6 +266,8 @@ class CarController extends BaseController
         $service->user_id = $user_id;
         $service->custom_service = $request->custom_service;
         $service->next_service = $car->purchase_date;
+        $service->next_service_km = $car->car_km;
+
         $service->user_car_id = $request->user_car_id;
         $service->save();
 
@@ -391,5 +404,25 @@ class CarController extends BaseController
         return $this->responseSuccess($cars, 'car-main', 'Car Set As Main', 200);
 
     }
+
+
+    public function addCompletedService(Request $request){
+        $request->validate([
+            'custom_service' => 'required',
+            'user_car_id' => 'required'
+        ]);
+
+        $service = new Service();
+        $user_id = auth()->user()->id;
+        $service->user_id = $user_id;
+        $service->custom_service = $request->custom_service;
+        $service->next_service = null;
+        $service->next_service_km = null;
+        $service->status = 'old';
+        $service->user_car_id = $request->user_car_id;
+        $service->save();
+
+    }
+
 
 }

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('default_service_id')->constrained('default_services')->onDelete('cascade')->nullable();
             $table->integer('price')->nullable();
             $table->json('custom_service');
-            $table->enum('status', ['active', 'inactive', 'completed'])->default('active');
+            $table->enum('status', ['active', 'inactive', 'completed', 'old'])->default('active');
             $table->date('last_serviced')->nullable();
             $table->date('next_service')->nullable();
             $table->integer('next_service_km')->nullable();
