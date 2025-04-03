@@ -65,6 +65,8 @@ class CarController extends BaseController
 
         $userCar = new UserCars();
 
+
+
         $userCar->user_id = $userID;
         $userCar->car_model_id = $request->car_model_id;
         $userCar->engine = $request->engine;
@@ -72,6 +74,13 @@ class CarController extends BaseController
         $userCar->manufacture_date = $request->manufacture_date;
 
         $userCar->save();
+
+        $cars = UserCars::all();
+        if ($cars->count() == 1) {
+            $cars->first()->update(['main_car' => 1]);
+            $userCar->save();
+        }
+
 
 
         return $this->responseSuccess($userCar, 'car-added', 'Car Added Successfully', 200);
@@ -84,8 +93,11 @@ class CarController extends BaseController
 
         // Fetch user cars with their related CarModels and Cars
         $cars = UserCars::where('user_id', $userID)
+            ->orderByDesc('main_car') // Main car first
+            ->orderBy('id')
             ->with(['CarModel.Cars']) // Eager load relationships
             ->get();
+
 
         // Add full image URL to each car
         foreach ($cars as $car) {
@@ -172,7 +184,6 @@ class CarController extends BaseController
     {
         $request->validate([
             'price' => 'required|numeric',
-            'product_used' => 'required|string',
             'service_id' => 'required|exists:services,id', // Added to target specific service
         ]);
 
@@ -358,5 +369,27 @@ class CarController extends BaseController
     }
 
 
+    public function makeCarMain($id)
+    {
+        $userId = auth()->user()->id;
+
+        // Find the car belonging to the authenticated user
+        $car = UserCars::where('user_id', $userId)->where('id', $id)->firstOrFail();
+
+        // Set all other cars' main_car to 0
+        UserCars::where('user_id', $userId)->update(['main_car' => 0]);
+
+        // Set the selected car as main
+        $car->update(['main_car' => 1]);
+
+        // Retrieve all cars, ensuring the main car is first
+        $cars = UserCars::where('user_id', $userId)
+            ->orderByDesc('main_car') // Main car first
+            ->orderBy('id') // Secondary sorting by ID
+            ->get();
+
+        return $this->responseSuccess($cars, 'car-main', 'Car Set As Main', 200);
+
+    }
 
 }

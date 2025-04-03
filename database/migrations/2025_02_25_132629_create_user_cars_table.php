@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('car_model_id')->constrained('car_model');
             $table->json('engine');
             $table->string('color');
+            $table->tinyInteger('main_car')->default(0);
             $table->integer('car_km');
             $table->date('purchase_date');
             $table->date('manufacture_date');

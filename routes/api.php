@@ -33,6 +33,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/getAllMods/{id}', [CarController::class, 'getAllMods']);
         Route::post('/updateCarKm', [CarController::class, 'updateCarKm']);
         Route::get('/deleteUserCar/{id}', [CarController::class, 'deleteUserCar']);
+        Route::get('/makeCarMain/{id}', [CarController::class, 'makeCarMain']);
 
     });
 
