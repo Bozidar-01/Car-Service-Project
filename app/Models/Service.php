@@ -14,6 +14,7 @@ class Service extends Model
         'status',
         'last_serviced',
         'next_service',
+        'last_service_km',
         'next_service_km',
         'product_used',
     ];

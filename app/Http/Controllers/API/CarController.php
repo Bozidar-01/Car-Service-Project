@@ -7,6 +7,7 @@ use App\Http\Controllers\BaseController;
 use App\Models\CarModel;
 use App\Models\CarModels;
 use App\Models\Cars;
+use App\Models\completedServices;
 use App\Models\DefaultService;
 use App\Models\Mods;
 use App\Models\Service;
@@ -14,6 +15,7 @@ use App\Models\UserCars;
 use Faker\Provider\Base;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use function Pest\Laravel\get;
 use function PHPUnit\Framework\greaterThanOrEqual;
 
 class CarController extends BaseController
@@ -185,10 +187,17 @@ class CarController extends BaseController
     public function getCompletedServices($carID)
     {
         $userID = auth()->user()->id;
-        $services = Service::with('defaultService')->where('user_car_id', $carID)->where('user_id', $userID)->whereIn('status', ['completed', 'old'])->get();
+
+        $services = completedServices::where('user_car_id', $carID)
+            ->where('user_id', $userID)
+            ->get()
+            ->map(function ($completed) {
+                return $completed->service;
+            });
 
         return $this->responseSuccess($services, 'services', 'services fetched successfully', 200);
     }
+
 
 
     public function markServiceCompleted(Request $request)
@@ -208,15 +217,16 @@ class CarController extends BaseController
         $car = UserCars::where('id', $service->user_car_id)->firstorfail();
 
 
-        $defaultService = DefaultService::where('id', $service->default_service_id)->firstorfail();
+        $defaultService = DefaultService::where('id', $service->default_service_id)->first();
 
         // Update service details
         $service->status = 'completed';
         $service->price = $request->price;
         $service->product_used = $request->product_used;
         $service->last_serviced = Carbon::today(); // Set to today's date
-        if (!$service->custom_service) {
+        if ($service->default_service_id) {
             $service->next_service = $service->last_serviced->copy()->addMonths($defaultService->date_interval);
+            $service->last_service_km = $car->car_km;
             $service->next_service_km = $car->car_km + $defaultService->service_interval;
         } else {
             $customService = is_string($service->custom_service)
@@ -224,11 +234,25 @@ class CarController extends BaseController
                 : (array)$service->custom_service;
 
             $service->next_service = $service->last_serviced->copy()->addMonths($customService['date_interval']);
+            $service->last_service_km = $car->car_km;
             $service->next_service_km = $car->car_km + $customService['service_interval'];
         }
         $service->save();
+        $sendToCompleted = array_merge(
+            $service->toArray(),
+            ['default_service' => $defaultService]
+        );
 
-        return $this->responseSuccess($service, 'service-completed', 'Service Completed Successfully', 200);
+
+        $completedService = New completedServices();
+
+        $completedService->user_id = $userId;
+        $completedService->user_car_id = $car->id;
+        $completedService->service = $sendToCompleted;
+
+        $completedService->save();
+
+        return $this->responseSuccess($completedService, 'service-completed', 'Service Completed Successfully', 200);
     }
 
     public function toggleService(Request $request)
@@ -363,6 +387,16 @@ class CarController extends BaseController
         $car->car_km = $request->car_km;
 
         $car->save();
+
+        Service::where('next_service_km', '<=', $car->car_km)
+            ->where('status', 'completed')
+            ->update([
+                'status' => 'active',
+                'next_service' => now()
+            ]);
+
+
+
 
         return $this->responseSuccess($car, 'car-km-updated', 'Car KM Updated Successfully', 200);
     }
