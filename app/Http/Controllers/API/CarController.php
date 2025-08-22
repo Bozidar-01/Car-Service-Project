@@ -42,7 +42,12 @@ class CarController extends BaseController
             }
         }
 
-        return $this->responseSuccess($cars, 'cars', 'Cars fetched successfully', 200);
+        $data = [
+            'cars' => $cars,
+            'userCars' => count($userCarIds),
+        ];
+
+        return $this->responseSuccess($data, 'cars', 'Cars fetched successfully', 200);
     }
 
 
