@@ -15,6 +15,7 @@ use App\Models\UserCars;
 use Faker\Provider\Base;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use function Pest\Laravel\get;
 use function PHPUnit\Framework\greaterThanOrEqual;
 
@@ -101,20 +102,33 @@ class CarController extends BaseController
 
         // Fetch user cars with their related CarModels and Cars
         $cars = UserCars::where('user_id', $userID)
-            ->orderByDesc('main_car') // Main car first
+            ->orderByDesc('main_car')
             ->orderBy('id')
             ->with(['CarModel.Cars']) // Eager load relationships
             ->get();
 
-
-        // Add full image URL to each car
+        // Add full image URL and calculate total cost
         foreach ($cars as $car) {
-            if ($car->carModel && $car->carModel->Cars) {
-                $car->image = FileUpload::getFullUrl("uploads/{$car->carModel->Cars->image}");
-            }
+            $carPrice = $car->car_price ?? 0;
+
+            // Sum of completed services prices
+            $completedServicesPrice = CompletedServices::where('user_car_id', $car->id)
+                ->sum(DB::raw("JSON_UNQUOTE(JSON_EXTRACT(service, '$.price')) + 0"));
+
+
+            // Sum of mods prices
+            $modsPrice = DB::table('mods')
+                ->where('user_car_id', $car->id)
+                ->sum('price');
+
+            $car->image = $car->carModel && $car->carModel->Cars
+                ? FileUpload::getFullUrl("uploads/{$car->carModel->Cars->image}")
+                : null;
+
+            $car->total_price = ($completedServicesPrice + $modsPrice) / 61.3 + $carPrice;
         }
 
-        return $this->responseSuccess($cars, 'cars', 'cars fetched successfully', 200);
+        return $this->responseSuccess($cars, 'cars', 'Cars fetched successfully', 200);
     }
 
     public function addNewCarDetails(Request $request)
@@ -463,7 +477,15 @@ class CarController extends BaseController
         ]);
 
         $userId = auth()->user()->id;
+        $car = UserCars::where('id',$request->input('user_car_id'))->firstorfail();
 
+        if($request->custom_service['last_service_km'] > $car->car_km) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service Km cannot be bigger then the registered car km',
+                'data' => []
+            ], 400);
+        }
         // Create the service record
         $service = new Service();
         $service->user_id = $userId;
