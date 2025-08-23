@@ -265,6 +265,14 @@ class CarController extends BaseController
             $service->status = 'active';
         }
 
+        if($service->last_service_km > $car->car_km) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service km cannot be bigger then the registered car km',
+                'data' => []
+            ], 400);
+        }
+
         $service->save();
 
         // Prepare completed service payload
@@ -482,7 +490,7 @@ class CarController extends BaseController
         if($request->custom_service['last_service_km'] > $car->car_km) {
             return response()->json([
                 'success' => false,
-                'message' => 'Service Km cannot be bigger then the registered car km',
+                'message' => 'Service km cannot be bigger then the registered car km',
                 'data' => []
             ], 400);
         }
