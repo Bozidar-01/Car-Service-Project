@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('color');
             $table->tinyInteger('main_car')->default(0);
             $table->integer('car_km');
+            $table->integer('car_price');
             $table->date('purchase_date');
             $table->date('manufacture_date');
             $table->timestamps();

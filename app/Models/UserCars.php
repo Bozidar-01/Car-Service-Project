@@ -11,7 +11,9 @@ class UserCars extends Model
     use HasFactory;
 
     protected $fillable = [
-        'main_car'
+        'main_car',
+        'car_document',
+        'car_price'
     ];
     protected $casts = [
         'engine' => 'array',

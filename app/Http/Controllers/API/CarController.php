@@ -122,6 +122,7 @@ class CarController extends BaseController
         $request->validate([
             'id' => 'required|exists:user_cars,id',
             'car_km' => 'required|numeric',
+            'car_price' => 'required|numeric',
             'purchase_date' => 'required|date',
         ]);
 
@@ -132,6 +133,7 @@ class CarController extends BaseController
 
         // Update car details
         $userCar->car_km = $request->car_km;
+        $userCar->car_price = $request->car_price;
         $userCar->purchase_date = $request->purchase_date;
         $userCar->save();
 
@@ -238,8 +240,8 @@ class CarController extends BaseController
             $customService = is_string($service->custom_service)
                 ? json_decode($service->custom_service, true)
                 : (array)$service->custom_service;
-
-            $service->next_service = $service->last_serviced->copy()->addMonths($customService['date_interval']);
+            $months = (int) $customService['date_interval'];
+            $service->next_service = $service->last_serviced->copy()->addMonths($months);
             $service->last_service_km = $request->custom_km ?? $car->car_km;
             $service->next_service_km = $service->last_service_km + $customService['service_interval'];
         }
@@ -453,22 +455,81 @@ class CarController extends BaseController
     }
 
 
-    public function addCompletedService(Request $request){
+    public function addCompletedService(Request $request)
+    {
         $request->validate([
-            'custom_service' => 'required',
-            'user_car_id' => 'required'
+            'custom_service' => 'required|array',
+            'user_car_id' => 'required|exists:user_cars,id',
         ]);
 
+        $userId = auth()->user()->id;
+
+        // Create the service record
         $service = new Service();
-        $user_id = auth()->user()->id;
-        $service->user_id = $user_id;
-        $service->custom_service = $request->custom_service;
-        $service->next_service = null;
-        $service->next_service_km = null;
-        $service->status = 'old';
+        $service->user_id = $userId;
         $service->user_car_id = $request->user_car_id;
+        $service->custom_service = $request->custom_service;
+        $service->status = 'old';
+        $service->last_service_km = $request->custom_service['last_service_km'] ?? null;
+        $service->next_service_km = $request->custom_service['next_service_km'] ?? null;
+        $service->last_serviced = $request->custom_service['last_serviced'] ?? null;
+        $service->next_service = $request->custom_service['next_service'] ?? null;
         $service->save();
 
+        // Prepare payload for CompletedServices
+        $completedData = [
+            'user_id' => $userId,
+            'user_car_id' => $service->user_car_id,
+            'service' => [
+                'default_service' => null,
+                'default_service_id' => null,
+                'status' => 'completed',
+                'last_service_km' => $service->last_service_km,
+                'last_serviced' => $service->last_serviced,
+                'product_used' => $service->custom_service['product_used'] ?? null,
+                'price' => $service->custom_service['price'] ?? null,
+                'custom_service' => [
+                    'name' => $service->custom_service['name'] ?? null,
+                ],
+            ],
+        ];
+
+        // Save to CompletedServices
+        $completedService = CompletedServices::create($completedData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Service added and completed successfully',
+            'data' => $completedService
+        ], 201);
+    }
+
+
+    public function uploadDoc(Request $request){
+        $request->validate([
+            'car_document' => 'required',
+            'car_id' => 'required',
+        ]);
+
+        $userID = auth()->user()->id;
+
+        $car = UserCars::where('user_id',$userID)->where('id',$request->input('car_id'))->firstorfail();
+
+        if($request->file('car_document')) {
+            // Use the FileUpload helper to store the file
+            $url = FileUpload::storeFile($request->file('car_document'));
+            $filename = basename($url); // Extracts the filename from the file URL
+            $car->car_document = $filename; // Save only the filename in the database
+        }
+
+        if($car->car_document){
+            $mediaPath = $car->car_document;
+            $car->car_document = FileUpload::getFullUrl("uploads/{$mediaPath}");
+        }
+
+        $car->save();
+
+        return $this->responseSuccess($car,'user-update','user updated successfully',200);
     }
 
 

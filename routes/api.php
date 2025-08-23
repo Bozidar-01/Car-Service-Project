@@ -18,6 +18,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/', [CarController::class, 'getCars']);
         Route::get('/getUserCars', [CarController::class, 'getUserCars']);
         Route::get('/models/{id}', [CarController::class, 'getCarModel']);
+        Route::post('/uploadDocs', [CarController::class, 'uploadDoc']);
         Route::post('/addUserCar', [CarController::class, 'addNewUserCar']);
         Route::post('/updateUserCar', [CarController::class, 'addNewCarDetails']);
         Route::get('/defaultServices', [CarController::class, 'getDefaultServices']);
